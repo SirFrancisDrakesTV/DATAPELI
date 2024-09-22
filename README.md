@@ -33,11 +33,11 @@ Registre una clave de API como Developer.
 ## 5 .
 Acepte las condiciones de uso y rellene la información necesaria:
 Type of Use: seleccione un tipo de uso en el menú desplegable (por ejemplo, Personal).
-Application Name: especifique una aplicación para la que utilizará la clave API (por ejemplo, Video Station).
+Application Name: especifique una aplicación para la que utilizará la clave API (por ejemplo, scraper de peliculas y series By: SirfrancisDrakesTV).
 Application URL: proporcione la dirección IP del Synology NAS.
 Application Summary: describa cómo utilizará la clave API.
 ![info9](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/5.png)
 ## 6 .
-Verá una clave API en API Key (v3 auth). Copie la clave y péguela en el campo de clave API en Video Station > Configuración > Configuración avanzada > Complemento de información de vídeo.
+Verá una clave API en API Key (v3 auth). Copie la clave y péguela en el campo de clave API en scraper de peliculas y series By: SirfrancisDrakesTV >
 ![info10](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/6.png)
 
