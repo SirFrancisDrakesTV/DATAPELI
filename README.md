@@ -17,7 +17,7 @@ pip install requests Pillow discord.py tweepy watchdog instabot-python python-vl
 
 ![info4](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/84E78E15-735C-4E17-8F3E-2D124A7DF82D.png)
 
-#Obtener una clave API de The Movie Database
+# Obtener una clave API de The Movie Database
 ## 1 .
 Inicie sesión o cree una cuenta en el sitio web de The Movie Database.
 ![info5](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/1.png)
