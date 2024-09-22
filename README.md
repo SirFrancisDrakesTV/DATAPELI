@@ -12,5 +12,6 @@
 ![info4](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/FEB5DFEB-AEE5-416C-AF13-259C868484ED.png)
 
 # Resultados en pantalla
-https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/84E78E15-735C-4E17-8F3E-2D124A7DF82D.png
+
+![info4](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/84E78E15-735C-4E17-8F3E-2D124A7DF82D.png)
 
