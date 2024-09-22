@@ -17,3 +17,27 @@ pip install requests Pillow discord.py tweepy watchdog instabot-python python-vl
 
 ![info4](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/84E78E15-735C-4E17-8F3E-2D124A7DF82D.png)
 
+#Obtener una clave API de The Movie Database
+## 1 .
+Inicie sesión o cree una cuenta en el sitio web de The Movie Database.
+![info5](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/1.png)
+## 2 .
+En el icono Cuenta, haga clic en Settings.
+![info6](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/2.png)
+## 3 .
+En la página API, haga clic en el enlace de la sección Request an API Key.
+![info7](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/3.png)
+## 4 .
+Registre una clave de API como Developer.
+![info8](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/4.png)
+## 5 .
+Acepte las condiciones de uso y rellene la información necesaria:
+Type of Use: seleccione un tipo de uso en el menú desplegable (por ejemplo, Personal).
+Application Name: especifique una aplicación para la que utilizará la clave API (por ejemplo, Video Station).
+Application URL: proporcione la dirección IP del Synology NAS.
+Application Summary: describa cómo utilizará la clave API.
+![info9](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/5.png)
+## 6 .
+Verá una clave API en API Key (v3 auth). Copie la clave y péguela en el campo de clave API en Video Station > Configuración > Configuración avanzada > Complemento de información de vídeo.
+![info10](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/6.png)
+
