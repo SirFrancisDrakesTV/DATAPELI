@@ -1,0 +1,556 @@
+import tkinter as tk
+from tkinter import messagebox, filedialog
+import json
+import requests  # Asegúrate de que esta es la librería correcta
+from PIL import Image, ImageTk
+import io
+import os
+import obswebsocket
+from obswebsocket import obsws, requests as obs_requests  # Cambiamos el nombre aquí para evitar conflictos
+import discord  # Asegúrate de tener la librería discord.py
+from instabot import Bot  # Asegúrate de tener instabot
+import tweepy  # Asegúrate de tener la librería tweepy
+
+
+class OBSPanel:
+    def __init__(self):
+        self.ventana = tk.Tk()
+        self.ventana.title("Configuración del Plugin Película OBS")
+        self.ventana.geometry("1200x800")
+
+        # Frame para configuración
+        self.config_frame = tk.Frame(self.ventana, bg="#e6f7ff", padx=10, pady=10)
+        self.config_frame.pack(side=tk.LEFT, fill=tk.Y)
+
+        tk.Label(self.config_frame, text="Configuración", font=("Arial", 16), bg="#e6f7ff").grid(row=0, column=0, columnspan=4)
+
+        # API Key de TMDB
+        tk.Label(self.config_frame, text="API Key de TMDB:").grid(row=1, column=0, sticky=tk.W)
+        self.tmdb_entry = tk.Entry(self.config_frame)
+        self.tmdb_entry.grid(row=1, column=1, sticky=tk.EW)
+        self.tmdb_status_light = tk.Label(self.config_frame, text="●", fg="red", bg="#e6f7ff")
+        self.tmdb_status_light.grid(row=1, column=2)
+        tk.Button(self.config_frame, text="Probar API", command=self.probar_api).grid(row=1, column=3, pady=5)
+
+        # Campos para WebSocket
+        tk.Label(self.config_frame, text="IP del Servidor WebSocket:").grid(row=2, column=0, sticky=tk.W)
+        self.ip_entry = tk.Entry(self.config_frame)
+        self.ip_entry.grid(row=2, column=1, sticky=tk.EW)
+        self.websocket_status_light = tk.Label(self.config_frame, text="●", fg="red", bg="#e6f7ff")
+        self.websocket_status_light.grid(row=2, column=2)
+
+        tk.Label(self.config_frame, text="Puerto WebSocket:").grid(row=3, column=0, sticky=tk.W)
+        self.puerto_entry = tk.Entry(self.config_frame)
+        self.puerto_entry.grid(row=3, column=1, sticky=tk.EW)
+
+        tk.Label(self.config_frame, text="Contraseña WebSocket:").grid(row=4, column=0, sticky=tk.W)
+        self.contraseña_entry = tk.Entry(self.config_frame, show='*')
+        self.contraseña_entry.grid(row=4, column=1, sticky=tk.EW)
+
+        # Fuente VLC
+        tk.Label(self.config_frame, text="Fuente VLC en OBS:").grid(row=5, column=0, sticky=tk.W)
+        self.vlc_source_entry = tk.Entry(self.config_frame)
+        self.vlc_source_entry.grid(row=5, column=1, sticky=tk.EW)
+        self.vlc_status_light = tk.Label(self.config_frame, text="●", fg="red", bg="#e6f7ff")
+        self.vlc_status_light.grid(row=5, column=2)
+        self.vlc_source_entry.bind("<Return>", lambda event: self.obtener_info_vlc())
+        tk.Button(self.config_frame, text="Probar VLC", command=self.probar_vlc).grid(row=5, column=3, pady=5)
+
+        # Webhook Discord
+        tk.Label(self.config_frame, text="Webhook Discord:").grid(row=6, column=0, sticky=tk.W)
+        self.discord_entry = tk.Entry(self.config_frame)
+        self.discord_entry.grid(row=6, column=1, sticky=tk.EW)
+        self.discord_status_light = tk.Label(self.config_frame, text="●", fg="red", bg="#e6f7ff")
+        self.discord_status_light.grid(row=6, column=2)
+        tk.Button(self.config_frame, text="Probar Discord", command=self.probar_discord).grid(row=6, column=3, pady=5)
+
+        # Usuario Instagram
+        tk.Label(self.config_frame, text="Usuario Instagram:").grid(row=7, column=0, sticky=tk.W)
+        self.instagram_user_entry = tk.Entry(self.config_frame)
+        self.instagram_user_entry.grid(row=7, column=1, sticky=tk.EW)
+        tk.Label(self.config_frame, text="Contraseña Instagram:").grid(row=8, column=0, sticky=tk.W)
+        self.instagram_pass_entry = tk.Entry(self.config_frame, show='*')
+        self.instagram_pass_entry.grid(row=8, column=1, sticky=tk.EW)
+        self.instagram_status_light = tk.Label(self.config_frame, text="●", fg="red", bg="#e6f7ff")
+        self.instagram_status_light.grid(row=8, column=2)
+        tk.Button(self.config_frame, text="Probar Instagram", command=self.probar_instagram).grid(row=8, column=3, pady=5)
+
+        # API Key Twitter
+        tk.Label(self.config_frame, text="API Key Twitter:").grid(row=9, column=0, sticky=tk.W)
+        self.twitter_api_key_entry = tk.Entry(self.config_frame)
+        self.twitter_api_key_entry.grid(row=9, column=1, sticky=tk.EW)
+
+        # API Key Secret de Twitter
+        tk.Label(self.config_frame, text="API Key Secret Twitter:").grid(row=10, column=0, sticky=tk.W)
+        self.twitter_api_secret_entry = tk.Entry(self.config_frame)
+        self.twitter_api_secret_entry.grid(row=10, column=1, sticky=tk.EW)
+
+        # Access Token Twitter
+        tk.Label(self.config_frame, text="Access Token Twitter:").grid(row=11, column=0, sticky=tk.W)
+        self.twitter_access_token_entry = tk.Entry(self.config_frame)
+        self.twitter_access_token_entry.grid(row=11, column=1, sticky=tk.EW)
+
+        # Access Token Secret Twitter
+        tk.Label(self.config_frame, text="Access Token Secret Twitter:").grid(row=12, column=0, sticky=tk.W)
+        self.twitter_access_secret_entry = tk.Entry(self.config_frame)
+        self.twitter_access_secret_entry.grid(row=12, column=1, sticky=tk.EW)
+
+        # Indicador de estado de Twitter
+        self.twitter_status_light = tk.Label(self.config_frame, text="●", fg="red", bg="#e6f7ff")
+        self.twitter_status_light.grid(row=9, column=2)
+
+        # Botón para probar conexión de Twitter
+        tk.Button(self.config_frame, text="Probar Twitter", command=self.probar_twitter).grid(row=9, column=3, pady=5)
+
+        # Ruta para guardar archivos
+        tk.Label(self.config_frame, text="Ruta para guardar archivos:").grid(row=13, column=0, sticky=tk.W)
+        self.ruta_entry = tk.Entry(self.config_frame)
+        self.ruta_entry.grid(row=13, column=1, sticky=tk.EW)
+        tk.Button(self.config_frame, text="Seleccionar Carpeta", command=self.seleccionar_carpeta).grid(row=13, column=3)
+
+        # Botón para guardar configuración
+        tk.Button(self.config_frame, text="Guardar Configuración", command=self.guardar_configuracion).grid(row=14, column=0, columnspan=4, pady=10)
+
+        # Botones para conectar y desconectar
+        tk.Button(self.config_frame, text="Conectar WebSocket", command=self.conectar_websocket).grid(row=15, column=0, pady=5)
+        tk.Button(self.config_frame, text="Desconectar WebSocket", command=self.desconectar_websocket).grid(row=15, column=1, pady=5)
+
+        # Indicadores de estado
+        self.vlc_status = tk.Label(self.config_frame, text="VLC: Desconectado", fg="red", bg="#e6f7ff")
+        self.vlc_status.grid(row=16, column=0, columnspan=2, sticky=tk.W)
+
+        self.instagram_status = tk.Label(self.config_frame, text="Instagram: Desconectado", fg="red", bg="#e6f7ff")
+        self.instagram_status.grid(row=17, column=0, columnspan=2, sticky=tk.W)
+
+        self.discord_status = tk.Label(self.config_frame, text="Discord: Desconectado", fg="red", bg="#e6f7ff")
+        self.discord_status.grid(row=18, column=0, columnspan=2, sticky=tk.W)
+
+        self.websocket_status = tk.Label(self.config_frame, text="WebSocket: Desconectado", fg="red", bg="#e6f7ff")
+        self.websocket_status.grid(row=19, column=0, columnspan=2, sticky=tk.W)
+
+        self.twitter_status = tk.Label(self.config_frame, text="Twitter: Desconectado", fg="red", bg="#e6f7ff")
+        self.twitter_status.grid(row=20, column=0, columnspan=2, sticky=tk.W)
+
+        self.tmdb_status = tk.Label(self.config_frame, text="TMDB API: Desconectado", fg="red", bg="#e6f7ff")
+        self.tmdb_status.grid(row=21, column=0, columnspan=2, sticky=tk.W)
+
+        # Frame para búsqueda de películas
+        self.search_frame = tk.Frame(self.ventana)
+        self.search_frame.pack(side=tk.TOP, padx=10, pady=10, fill=tk.X)
+
+        tk.Label(self.search_frame, text="Buscar Película/Serie:", font=("Arial", 14)).grid(row=0, column=0, sticky=tk.W)
+        self.pelicula_entry = tk.Entry(self.search_frame)
+        self.pelicula_entry.grid(row=0, column=1, sticky=tk.EW)
+        self.pelicula_entry.bind("<Return>", lambda event: self.buscar_peliculas(self.pelicula_entry.get()))
+
+        tk.Button(self.search_frame, text="Buscar", command=lambda: self.buscar_peliculas(self.pelicula_entry.get())).grid(row=0, column=2)
+
+        # Opciones de tipo de búsqueda
+        self.tipo_var = tk.StringVar(value="movie")
+        tk.Radiobutton(self.search_frame, text="Película", variable=self.tipo_var, value="movie").grid(row=0, column=3, sticky=tk.W)
+        tk.Radiobutton(self.search_frame, text="Serie", variable=self.tipo_var, value="tv").grid(row=0, column=4, sticky=tk.W)
+
+        # Botón para modo automático
+        tk.Button(self.search_frame, text="Modo Automático", command=self.modo_automatico).grid(row=0, column=5)
+
+        # Frame para resultados con scrollbar
+        self.resultados_frame = tk.Frame(self.search_frame)
+        self.resultados_frame.grid(row=1, column=0, columnspan=6, sticky=tk.EW)
+
+        self.resultados_listbox = tk.Listbox(self.resultados_frame, height=15)
+        self.resultados_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.resultados_listbox.bind("<<ListboxSelect>>", self.seleccionar_pelicula)
+
+        scrollbar = tk.Scrollbar(self.resultados_frame, command=self.resultados_listbox.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.resultados_listbox.config(yscrollcommand=scrollbar.set)
+
+        # Frame para mostrar la información de la película
+        self.info_frame = tk.Frame(self.ventana, padx=10, pady=10)
+        self.info_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+
+        tk.Label(self.info_frame, text="Información de la Película/Serie", font=("Arial", 14)).grid(row=0, column=0, columnspan=2, sticky=tk.W)
+
+        self.poster_label = tk.Label(self.info_frame, text="Carátula aquí")
+        self.poster_label.grid(row=1, column=0, rowspan=4, sticky=tk.W)
+
+        tk.Label(self.info_frame, text="Título:").grid(row=1, column=1, sticky=tk.W)
+        self.titulo_label = tk.Label(self.info_frame, text="Título aquí")
+        self.titulo_label.grid(row=1, column=2, sticky=tk.W)
+
+        tk.Label(self.info_frame, text="Año:").grid(row=2, column=1, sticky=tk.W)
+        self.ano_label = tk.Label(self.info_frame, text="Año aquí")
+        self.ano_label.grid(row=2, column=2, sticky=tk.W)
+
+        tk.Label(self.info_frame, text="Director:").grid(row=3, column=1, sticky=tk.W)
+        self.director_label = tk.Label(self.info_frame, text="Director aquí")
+        self.director_label.grid(row=3, column=2, sticky=tk.W)
+
+        tk.Label(self.info_frame, text="Sinopsis:").grid(row=4, column=1, sticky=tk.W)
+        self.sinopsis_label = tk.Label(self.info_frame, text="Sinopsis aquí")
+        self.sinopsis_label.grid(row=4, column=2, sticky=tk.W)
+
+        # Nueva etiqueta para Puntuación
+        tk.Label(self.info_frame, text="Puntuación:").grid(row=5, column=1, sticky=tk.W)
+        self.puntuacion_label = tk.Label(self.info_frame, text="Puntuación aquí")
+        self.puntuacion_label.grid(row=5, column=2, sticky=tk.W)
+
+        # Nueva etiqueta para Votos
+        tk.Label(self.info_frame, text="Votos:").grid(row=6, column=1, sticky=tk.W)
+        self.votos_label = tk.Label(self.info_frame, text="Votos aquí")
+        self.votos_label.grid(row=6, column=2, sticky=tk.W)
+
+        # Ejecutar la aplicación
+        self.ventana.mainloop()
+
+    def obtener_info_vlc(self):
+        """Obtiene la información de la fuente VLC desde OBS."""
+        fuente_vlc = self.vlc_source_entry.get()
+    
+        if not fuente_vlc:
+            messagebox.showwarning("Advertencia", "Por favor, ingresa el nombre de la fuente VLC.")
+            return
+    
+        try:
+            # Obtener la información de la fuente
+            response = self.cliente.call(obswebsocket.requests.GetSourceSettings(fuente_vlc))
+            settings = response.get("settings", {})
+
+            # Si hay una lista de reproducción en VLC, obtén el archivo actual
+            if "playlist" in settings:
+                playlist = settings["playlist"]
+                if playlist:
+                    # Mostrar el archivo actual que se está reproduciendo
+                    archivo_actual = playlist[0]  # Suponiendo que el primer elemento es el actual
+                    messagebox.showinfo("Archivo en reproducción", f"Reproduciendo: {archivo_actual}")
+                else:
+                    messagebox.showinfo("Archivo en reproducción", "No hay archivos en reproducción.")
+            else:
+                messagebox.showwarning("Advertencia", "La fuente VLC no tiene una lista de reproducción.")
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo obtener información de la fuente VLC: {str(e)}")
+    
+
+    
+    def guardar_informacion_pelicula(self, data):
+        """Guarda la información de la película en archivos separados."""
+        try:
+            ruta = self.ruta_entry.get()
+            if not os.path.exists(ruta):
+                os.makedirs(ruta)
+
+            # Guardar la carátula
+            poster_url = f"https://image.tmdb.org/t/p/w500{data.get('poster_path', '')}"
+            img_data = requests.get(poster_url).content
+            with open(os.path.join(ruta, 'caratula.jpg'), 'wb') as img_file:
+                img_file.write(img_data)
+
+            # Guardar detalles en archivos de texto
+            directores = [
+                person['name'] for person in data.get('credits', {}).get('crew', [])
+                if person['job'] == 'Director'
+            ]
+
+            # Si no hay directores encontrados, se asigna "Desconocido"
+            directores_str = ', '.join(directores) if directores else 'Desconocido'
+
+            detalles = {
+                'titulo.txt': f"Título: {data.get('title', '')}",
+                'año.txt': f"Año: {data.get('release_date', '').split('-')[0]}",
+                'votos.txt': f"Votos: {data.get('vote_count', 0)}",
+                'sinopsis.txt': f"Sinopsis: {data.get('overview', '')}",
+                'puntuacion.txt': f"Puntuación: {data.get('vote_average', 0)}",
+                'director.txt': f"Director: {directores_str}"
+            }
+
+
+            for nombre_archivo, contenido in detalles.items():
+                with open(os.path.join(ruta, nombre_archivo), 'w', encoding='utf-8') as text_file:
+                    text_file.write(contenido)
+
+            messagebox.showinfo("Éxito", "Información de la película guardada exitosamente.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al guardar la información: {str(e)}")
+    
+        
+    def probar_api(self):
+        api_key = self.tmdb_entry.get()
+        response = requests.get(f"https://api.themoviedb.org/3/movie/popular?api_key={api_key}")
+        if response.status_code == 200:
+            messagebox.showinfo("Éxito", "Conexión a la API de TMDB exitosa.")
+        else:
+            messagebox.showerror("Error", "Error al conectar a la API de TMDB.")
+
+    def buscar_peliculas(self, query):
+        api_key = self.tmdb_entry.get()
+        response = requests.get(f"https://api.themoviedb.org/3/search/movie?api_key={api_key}&query={query}")
+        if response.status_code == 200:
+            resultados = response.json().get("results", [])
+            if resultados:
+                self.mostrar_detalles(resultados[0])  # Muestra la primera película
+            else:
+                messagebox.showinfo("Sin Resultados", "No se encontraron películas.")
+        else:
+            messagebox.showerror("Error", "Error al buscar películas.")
+
+    def mostrar_detalles(self, pelicula):
+        titulo = pelicula.get("title")
+        sinopsis = pelicula.get("overview")
+        imagen_url = f"https://image.tmdb.org/t/p/w500{pelicula.get('poster_path')}"
+        puntuacion = pelicula.get("vote_average")
+        votos = pelicula.get("vote_count")
+
+        # Actualiza el texto con detalles
+        self.detalles_text.delete(1.0, tk.END)
+        self.detalles_text.insert(tk.END, f"Título: {titulo}\nSinopsis: {sinopsis}\nPuntuación: {puntuacion}\nVotos: {votos}")
+
+        # Cargar y mostrar la carátula
+        response = requests.get(imagen_url)
+        img_data = io.BytesIO(response.content)
+        img = Image.open(img_data)
+        img.thumbnail((300, 450))
+        self.img_tk = ImageTk.PhotoImage(img)
+        self.caratula_label.config(image=self.img_tk)
+        self.caratula_label.image = self.img_tk  # Mantener referencia
+
+        # Guardar detalles de la película
+        self.pelicula_actual = {
+            "titulo": titulo,
+            "sinopsis": sinopsis,
+            "puntuacion": puntuacion,
+            "votos": votos,
+            "imagen_url": imagen_url
+        }
+
+    def guardar_caratula_detalles(self):
+        if hasattr(self, 'pelicula_actual'):
+            ruta = self.ruta_entry.get()
+            if not os.path.exists(ruta):
+                os.makedirs(ruta)
+
+            # Guardar la carátula y sobrescribir si existe
+            img_path = os.path.join(ruta, "caratula.jpg")
+            img = Image.open(io.BytesIO(requests.get(self.pelicula_actual['imagen_url']).content))
+            img.save(img_path)
+
+            # Guardar detalles en un archivo .txt y sobrescribir si existe
+            detalles_path = os.path.join(ruta, "detalles.txt")
+            with open(detalles_path, 'w') as f:
+                f.write(f"Título: {self.pelicula_actual['titulo']}\n")
+                f.write(f"Sinopsis: {self.pelicula_actual['sinopsis']}\n")
+                f.write(f"Puntuación: {self.pelicula_actual['puntuacion']}\n")
+                f.write(f"Votos: {self.pelicula_actual['votos']}\n")
+                f.write(f"Imagen URL: {self.pelicula_actual['imagen_url']}\n")
+
+            messagebox.showinfo("Éxito", "Carátula y detalles guardados exitosamente.")
+        else:
+            messagebox.showwarning("Advertencia", "No hay película seleccionada.")
+
+    
+    def seleccionar_carpeta(self):
+        carpeta = filedialog.askdirectory()
+        if carpeta:
+            self.ruta_entry.delete(0, tk.END)
+            self.ruta_entry.insert(0, carpeta)    
+
+    def cargar_configuracion(self):
+        """Carga la configuración desde un archivo JSON si existe."""
+        if os.path.exists("configuracion.json"):
+            with open("configuracion.json", "r") as f:
+                configuracion = json.load(f)
+
+            # Actualizar los campos con los valores cargados
+            self.tmdb_entry.insert(0, configuracion.get("tmdb_api_key", ""))
+            self.ip_entry.insert(0, configuracion.get("ip_websocket", ""))
+            self.puerto_entry.insert(0, configuracion.get("puerto_websocket", ""))
+            self.contraseña_entry.insert(0, configuracion.get("contraseña_websocket", ""))
+            self.discord_entry.insert(0, configuracion.get("discord_webhook", ""))
+            self.instagram_user_entry.insert(0, configuracion.get("instagram_user", ""))
+            self.instagram_pass_entry.insert(0, configuracion.get("instagram_pass", ""))
+            self.twitter_user_entry.insert(0, configuracion.get("twitter_user", ""))
+            self.twitter_pass_entry.insert(0, configuracion.get("twitter_pass", ""))
+            self.vlc_source_entry.insert(0, configuracion.get("vlc_source", ""))
+            self.ruta_entry.insert(0, configuracion.get("ruta_guardado", ""))
+
+    def guardar_configuracion(self):
+        """Guarda la configuración actual en un archivo JSON."""
+        configuracion = {
+            "tmdb_api_key": self.tmdb_entry.get(),
+            "ip_websocket": self.ip_entry.get(),
+            "puerto_websocket": self.puerto_entry.get(),
+            "contraseña_websocket": self.contraseña_entry.get(),
+            "discord_webhook": self.discord_entry.get(),
+            "instagram_user": self.instagram_user_entry.get(),
+            "instagram_pass": self.instagram_pass_entry.get(),
+            "twitter_user": self.twitter_user_entry.get(),
+            "twitter_pass": self.twitter_pass_entry.get(),
+            "vlc_source": self.vlc_source_entry.get(),
+            "ruta_guardado": self.ruta_entry.get()
+        }
+
+        with open("configuracion.json", "w") as f:
+            json.dump(configuracion, f)
+
+        messagebox.showinfo("Guardar Configuración", "Configuración guardada exitosamente.")
+
+    def seleccionar_carpeta(self):
+        """Abre un cuadro de diálogo para seleccionar una carpeta y guarda la ruta."""
+        carpeta = filedialog.askdirectory()
+        if carpeta:
+            self.ruta_entry.delete(0, tk.END)
+            self.ruta_entry.insert(0, carpeta)
+
+    def conectar_websocket(self):
+        ip = self.ip_entry.get()
+        puerto = self.puerto_entry.get()
+        contraseña = self.contraseña_entry.get()
+        try:
+            self.cliente = obswebsocket.obsws(ip, int(puerto), contraseña)
+            self.cliente.connect()
+            self.websocket_status.config(text="WebSocket: Conectado", fg="green")
+            self.websocket_status_light.config(fg="green")
+        except Exception:
+            self.websocket_status.config(text="WebSocket: Desconectado", fg="red")
+            self.websocket_status_light.config(fg="red")
+            messagebox.showerror("Error", "No se pudo conectar al WebSocket.")
+
+    def desconectar_websocket(self):
+        try:
+            self.cliente.disconnect()
+            self.websocket_status.config(text="WebSocket: Desconectado", fg="red")
+            self.websocket_status_light.config(fg="red")
+        except Exception:
+            messagebox.showerror("Error", "No se pudo desconectar del WebSocket.")
+
+    def probar_api(self):
+        api_key = self.tmdb_entry.get()
+        if api_key:
+            test_url = f"https://api.themoviedb.org/3/movie/popular?api_key={api_key}&language=es-ES"
+            response = requests.get(test_url)
+            if response.status_code == 200:
+                self.tmdb_status_light.config(fg="green")
+                messagebox.showinfo("Conexión API", "Conexión a la API de TMDB exitosa.")
+            else:
+                self.tmdb_status_light.config(fg="red")
+                messagebox.showerror("Conexión API", f"Error al conectar a la API: {response.status_code}")
+        else:
+            self.tmdb_status_light.config(fg="red")
+            messagebox.showerror("Conexión API", "Por favor, ingresa una API Key válida.")
+
+    def probar_discord(self):
+        discord_webhook = self.discord_entry.get()
+        if discord_webhook:
+            self.discord_status_light.config(fg="green")
+        else:
+            self.discord_status_light.config(fg="red")
+
+    def probar_instagram(self):
+        instagram_user = self.instagram_user_entry.get()
+        instagram_pass = self.instagram_pass_entry.get()
+        if instagram_user and instagram_pass:
+            self.instagram_status_light.config(fg="green")
+        else:
+            self.instagram_status_light.config(fg="red")
+
+    def probar_twitter(self):
+        twitter_user = self.twitter_user_entry.get()
+        twitter_pass = self.twitter_pass_entry.get()
+        if twitter_user and twitter_pass:
+            self.twitter_status_light.config(fg="green")
+        else:
+            self.twitter_status_light.config(fg="red")
+
+    def probar_vlc(self):
+        vlc_source = self.vlc_source_entry.get()
+        if vlc_source:
+            self.vlc_status_light.config(fg="green")
+        else:
+            self.vlc_status_light.config(fg="red")
+
+    def buscar_peliculas(self, query):
+        tipo = self.tipo_var.get()
+        api_key = self.tmdb_entry.get()
+        search_url = f"https://api.themoviedb.org/3/search/{tipo}?api_key={api_key}&query={query}&language=es-ES"
+        response = requests.get(search_url)
+
+        if response.status_code == 200:
+            data = response.json()
+            self.resultados_listbox.delete(0, tk.END)
+            if data.get("results"):
+                for pelicula in data["results"]:
+                    titulo = pelicula["title"] if tipo == "movie" else pelicula["name"]
+                    self.resultados_listbox.insert(tk.END, f"{titulo} ({pelicula.get('release_date', 'N/A')[:4]})")
+            else:
+                messagebox.showwarning("No encontrado", "No se encontraron resultados.")
+        else:
+            messagebox.showerror("Error", f"Error al buscar: {response.status_code}")
+
+    def seleccionar_pelicula(self, event):
+        try:
+            seleccion = self.resultados_listbox.curselection()[0]
+            pelicula = self.resultados_listbox.get(seleccion)
+            titulo = pelicula.split(" (")[0]
+            tipo = self.tipo_var.get()
+            self.cargar_info_pelicula(titulo, tipo)
+        except IndexError:
+            pass
+
+
+    def cargar_info_pelicula(self, titulo, tipo):
+        api_key = self.tmdb_entry.get()
+        search_url = f"https://api.themoviedb.org/3/search/{tipo}?api_key={api_key}&query={titulo}&language=es-ES"
+        search_response = requests.get(search_url)
+        if search_response.status_code == 200:
+            search_data = search_response.json()
+            if search_data.get("results"):
+                pelicula_id = search_data["results"][0]["id"]
+                info_url = f"https://api.themoviedb.org/3/{tipo}/{pelicula_id}?api_key={api_key}&language=es-ES"
+                info_response = requests.get(info_url)
+                if info_response.status_code == 200:
+                    data = info_response.json()
+                    self.titulo_label.config(text=data.get("title", ""))
+                    self.ano_label.config(text=data.get("release_date", "").split("-")[0])
+                    
+                    # Obtener el director de los créditos
+                    credits_url = f"https://api.themoviedb.org/3/{tipo}/{pelicula_id}/credits?api_key={api_key}&language=es-ES"
+                    credits_response = requests.get(credits_url)
+                    if credits_response.status_code == 200:
+                        credits_data = credits_response.json()
+                        directors = [person['name'] for person in credits_data['crew'] if person['job'] == 'Director']
+                        self.director_label.config(text=", ".join(directors) if directors else "Desconocido")
+                    else:
+                        self.director_label.config(text="Desconocido")
+
+                    self.sinopsis_label.config(text=data.get("overview", ""))
+                    
+                    # Nueva información de puntuación y votos
+                    self.puntuacion_label.config(text=str(data.get('vote_average', 'N/A')))
+                    self.votos_label.config(text=str(data.get('vote_count', 'N/A')))
+
+                    # Guardar información de la película
+                    self.guardar_informacion_pelicula(data)
+
+                    # Mostrar el poster
+                    poster_url = f"https://image.tmdb.org/t/p/w500{data.get('poster_path', '')}"
+                    if poster_url:
+                        img_data = requests.get(poster_url).content
+                        img = Image.open(io.BytesIO(img_data))
+                        img = img.resize((150, 225), Image.ANTIALIAS)
+                        photo = ImageTk.PhotoImage(img)
+                        self.poster_label.config(image=photo)
+                        self.poster_label.image = photo
+                    else:
+                        self.poster_label.config(text="No hay carátula disponible", image='', compound=tk.CENTER)
+                else:
+                    messagebox.showerror("Error", f"Error al obtener información: {info_response.status_code}")
+            else:
+                messagebox.showwarning("No encontrado", "No se encontró información para la película seleccionada.")
+        else:
+            messagebox.showerror("Error", f"Error al buscar la película: {search_response.status_code}")
+
+    def modo_automatico(self):
+        messagebox.showinfo("Modo Automático", "Modo automático activado (implementa tu lógica aquí).")
+        
+
+# Ejecutar la aplicación
+app = OBSPanel()
