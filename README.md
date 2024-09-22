@@ -4,9 +4,9 @@ scraper de peliculas y series
 comando de instalacion de librerias
 pip install requests Pillow discord.py tweepy watchdog instabot-python python-vlc
 
-![interface grafica](https://ibb.co/F8rFF8M)
-https://ibb.co/F8rFF8M
-https://ibb.co/fdg5PBk
-https://ibb.co/dpffgY4
-https://ibb.co/7vc9cL7
-https://ibb.co/X7tJmmp
+![interface grafica](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/8C546FEE-AE82-4520-BE9F-CAA0DAF10BF6.png)
+![info1](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/5C0DCB72-BA03-4887-A7C7-D2BA9B9A4194.png)
+![info2](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/5AB5172C-B289-4092-8505-C20D2D5A016C.png)
+![info3](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/B0CAFF04-6AF1-4EAE-8337-0B4144A537D8.png)
+![info4](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/FEB5DFEB-AEE5-416C-AF13-259C868484ED.png)
+
