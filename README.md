@@ -1,4 +1,4 @@
-# DATAPELI
+# DATAPELI ESTA EN CONSTRUCCION AUN PERO SE PUEDE UTILIZAR CASI TODAS SUS FUNCIONES
 # scraper de peliculas y series creado por SirFrancisDrakesTV
 
 # Comando de instalacion de librerias
