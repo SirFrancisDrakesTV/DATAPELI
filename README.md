@@ -3,7 +3,9 @@
 
 # Comando de instalacion de librerias
 
-```pip install requests Pillow discord.py tweepy watchdog instabot-python python-vlc```
+```bash
+pip install requests Pillow discord.py tweepy watchdog instabot-python python-vlc
+```
 
 ![interface grafica](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/8C546FEE-AE82-4520-BE9F-CAA0DAF10BF6.png)
 ![info1](https://github.com/SirFrancisDrakesTV/DATAPELI/blob/main/5C0DCB72-BA03-4887-A7C7-D2BA9B9A4194.png)
